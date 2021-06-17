@@ -1,5 +1,6 @@
 <launch>
 
+  <!--Launch Sensor Setup with USB Cam and Pico Flexx TOF Camera-->
   <rosparam file="$(find common)/config/parameters.yaml" />
 
   <node name="usb_cam" pkg="usb_cam" type="usb_cam_node" output="screen" >
@@ -9,25 +10,18 @@
     <param name="io_method" value="mmap"/>
   </node>
 
+  <include file="$(find pico_flexx_driver)/launch/pico_flexx_driver.launch">
+        <param name="publish_tf" value="true"/>
+        <param name="use_case" value="0"/>
+  </include>
+
+  <!--Launch RVIZ to visualise Status and current Robot Configuration-->
   <node name="rviz" pkg="rviz" type="rviz" args="-d $(find common)/config/rviz_orb_slam2.rviz">
   </node>
+  <include file="$(find common)/launch/configuration_real.launch">
+  </include>
 
-  <param name="robotino_description" command="$(find xacro)/xacro '$(find common)/src/virtual_robot/robotino.xacro'"/>
-
-  <!--node pkg="tf" type="static_transform_publisher" name="" args="0 0 0 0 0 0  map chassis 50">
-  </node-->
-  <node pkg="tf" type="static_transform_publisher" name="" args="0 .01 .2 -1.570796327 0 0 tof_sensor pico_flexx_link 50"> 
-  </node>
-  <node pkg="tf" type="static_transform_publisher" name="tf_p2p" args="0 0 0 0 0 -1.570796327  pico_flexx_link pico_flexx_optical_frame 50">
-  </node>
-  <node pkg="tf" type="static_transform_publisher" name="tf_c2c" args="-.05 0 .15 0 0 0  chassis computing_unit 50">
-  </node>
-  <node pkg="tf" type="static_transform_publisher" name="tf_c2s" args="0 0 0 0 0 0  chassis sensor_housing 50">
-  </node>
-  <node pkg="tf" type="static_transform_publisher" name="tf_s2t" args="0 0 0 0 0 0  sensor_housing tof_sensor 50">
-  </node>
-
-
+  <!-- Launch SLAM Algorithm -->
   <node name="orb_slam2_mono" pkg="orb_slam2_ros"
       type="orb_slam2_ros_mono" output="screen">
 
@@ -54,24 +48,22 @@
        <param name="/ORBextractor/minThFAST" type="int" value="7" />
 
        <!-- Camera parameters -->
-       <!-- Camera frames per second -->
        <param name="camera_fps" type="int" value="30" />
        <!-- Color order of the images (0: BGR, 1: RGB. It is ignored if images are grayscale) -->
        <param name="camera_rgb_encoding" type="bool" value="true" />
-
-        <!-- Camera calibration parameters -->
         <!--If the node should wait for a camera_info topic to take the camera calibration data-->
-       <param name="load_calibration_from_cam" type="bool" value="false" />
-       <!-- Camera calibration and distortion parameters (OpenCV) -->
-      <param name="camera_fx" type="double" value="615.6707153320312" />
-      <param name="camera_fy" type="double" value="615.962158203125" />
-      <param name="camera_cx" type="double" value="328.0010681152344" />
-      <param name="camera_cy" type="double" value="241.31031799316406" />
-       <!-- Camera calibration and distortion parameters (OpenCV) -->
-      <param name="camera_k1" type="double" value="0.0" />
-      <param name="camera_k2" type="double" value="0.0" />
-      <param name="camera_p1" type="double" value="0.0" />
-      <param name="camera_p2" type="double" value="0.0" />
-      <param name="camera_k3" type="double" value="0.0" />
+       <param name="load_calibration_from_cam" type="bool" value="true" />
   </node>
+
+  <!-- Launch Mapping Tool of Choice -->
+  <node pkg="octomap_server" type="octomap_server_node" name="octomap_server">
+		<param name="resolution" value="0.05" />
+		<!-- fixed map frame (set to 'map' if SLAM or localization running!) -->
+		<param name="frame_id" type="string" value="map" />
+		<!-- maximum range to integrate (speedup!) -->
+		<param name="sensor_model/max_range" value="5.0" />
+		<!-- data source to integrate (PointCloud2) -->
+		<remap from="cloud_in" to="/pico_flexx/points" />
+	</node>
+
 </launch>
