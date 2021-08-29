@@ -159,6 +159,19 @@ void Node::PublishPositionAsTransform (cv::Mat position) {
   tf_map2target_stamped = tf2::Stamped<tf2::Transform>(tf_map2target, current_frame_time_, map_frame_id_param_);
   geometry_msgs::TransformStamped msg = tf2::toMsg(tf_map2target_stamped);
   msg.child_frame_id = target_frame_id_param_;
+
+  double true_scale;
+  double off_x;
+  double off_y;
+  double off_z;
+  ros::param::get("orbslam2/scale_adjust", true_scale);
+  ros::param::get("orbslam2/offset_x", off_x);
+  ros::param::get("orbslam2/offset_y", off_y);
+  ros::param::get("orbslam2/offset_z", off_z);
+
+  msg.transform.translation.x = true_scale * msg.transform.translation.x + off_x; // REMOVE ME YOU BLISTERING IDIOT!
+  msg.transform.translation.y = true_scale * msg.transform.translation.y + off_y;
+  msg.transform.translation.z = true_scale * msg.transform.translation.z + off_z;
   // Broadcast tf
   static tf2_ros::TransformBroadcaster tf_broadcaster;
   tf_broadcaster.sendTransform(msg);
@@ -175,6 +188,19 @@ void Node::PublishPositionAsPoseStamped (cv::Mat position) {
   tf_position_target_stamped = tf2::Stamped<tf2::Transform>(tf_position_target, current_frame_time_, map_frame_id_param_);
   geometry_msgs::PoseStamped pose_msg;
   tf2::toMsg(tf_position_target_stamped, pose_msg);
+
+  double true_scale;
+  double off_x;
+  double off_y;
+  double off_z;
+  ros::param::get("orbslam2/scale_adjust", true_scale);
+  ros::param::get("orbslam2/offset_x", off_x);
+  ros::param::get("orbslam2/offset_y", off_y);
+  ros::param::get("orbslam2/offset_z", off_z);
+  
+  pose_msg.pose.position.x = true_scale * pose_msg.pose.position.x + off_x; // REMOVE ME YOU BLISTERING IDIOT!
+  pose_msg.pose.position.y = true_scale * pose_msg.pose.position.y + off_y;
+  pose_msg.pose.position.z = true_scale * pose_msg.pose.position.z + off_z;
   pose_publisher_.publish(pose_msg);
 }
 
